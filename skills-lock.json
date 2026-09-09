@@ -72,6 +72,12 @@
       "sourceType": "github",
       "skillPath": "skills/supabase-postgres-best-practices/SKILL.md",
       "computedHash": "128fac78002d916c8ca908245d398e634f540d8bcf20915b2b2359aeb18eba59"
+    },
+    "web-scraper-api": {
+      "source": "oxylabs/agent-skills",
+      "sourceType": "github",
+      "skillPath": "skills/web-scraper-api/SKILL.md",
+      "computedHash": "9f7561982f95f96b759af0cf9ee4e1a9e8bd41156b6c0711fdc7299326f57c5d"
     }
   }
 }
