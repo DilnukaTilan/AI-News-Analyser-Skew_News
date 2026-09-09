@@ -47,7 +47,7 @@ For every implementation request:
 5. Ask a focused question only if the task has meaningful ambiguity.
 6. Create a detailed prompt file in `prompts/`.
 7. Ask: `I prepared the implementation prompt at prompts/<file-name>.md. Is this good to execute?`
-8. Implement only after user approval.
+8. On approval, re-read the approved prompt file in the prompts folder and implement it strictly. Implement only after user approval.
 9. Run available checks.
 10. Share exact steps to test or run the completed feature.
 
