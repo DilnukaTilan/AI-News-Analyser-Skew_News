@@ -1,3 +1,4 @@
+import { Show, SignInButton, SignUpButton, UserButton } from "@clerk/nextjs";
 import Link from "next/link";
 
 import { Chip } from "@/components/ui/chip";
@@ -98,7 +99,7 @@ export function SiteHeader({ showTopics = true }: SiteHeaderProps) {
       </div>
 
       <div className="border-b border-black/20">
-        <div className="mx-auto flex h-[66px] max-w-app items-center gap-5 px-4 sm:px-6">
+        <div className="mx-auto flex h-[66px] max-w-app items-center gap-3 px-4 sm:gap-5 sm:px-6">
           <button
             type="button"
             aria-label="Open navigation menu"
@@ -109,7 +110,7 @@ export function SiteHeader({ showTopics = true }: SiteHeaderProps) {
 
           <Link
             href="/"
-            className="relative mr-2 flex h-12 min-w-[82px] flex-col justify-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/40"
+            className="relative flex h-12 min-w-[68px] flex-col justify-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/40 sm:mr-2 sm:min-w-[82px]"
             aria-label="Skew News home"
           >
             <span className="text-[27px] font-bold leading-6 tracking-[-0.04em]">
@@ -148,18 +149,33 @@ export function SiteHeader({ showTopics = true }: SiteHeaderProps) {
           </nav>
 
           <div className="ml-auto flex items-center gap-2 sm:gap-3">
-            <button
-              type="button"
-              className="rounded-sm bg-[#20201f] px-3 py-2.5 text-[11px] font-medium text-white transition-colors hover:bg-black focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/40 sm:min-w-[102px] sm:px-5"
-            >
-              Subscribe
-            </button>
-            <button
-              type="button"
-              className="hidden rounded-sm border border-black/50 bg-bg-primary px-5 py-2.5 text-[11px] font-medium text-text-primary transition-colors hover:bg-surface focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/40 sm:block sm:min-w-[96px]"
-            >
-              Login
-            </button>
+            <Show when="signed-out">
+              <SignUpButton mode="redirect">
+                <button
+                  type="button"
+                  className="rounded-sm bg-[#20201f] px-2.5 py-2.5 text-[10px] font-medium text-white transition-colors hover:bg-black focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/40 sm:min-w-[102px] sm:px-5 sm:text-[11px]"
+                >
+                  Sign up
+                </button>
+              </SignUpButton>
+              <SignInButton mode="redirect">
+                <button
+                  type="button"
+                  className="rounded-sm bg-bg-primary px-1.5 py-2.5 text-[10px] font-medium text-text-primary transition-colors hover:bg-surface focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/40 sm:min-w-[96px] sm:border sm:border-black/50 sm:px-5 sm:text-[11px]"
+                >
+                  Log in
+                </button>
+              </SignInButton>
+            </Show>
+            <Show when="signed-in">
+              <UserButton
+                appearance={{
+                  elements: {
+                    avatarBox: "h-9 w-9 sm:h-10 sm:w-10",
+                  },
+                }}
+              />
+            </Show>
           </div>
         </div>
       </div>
