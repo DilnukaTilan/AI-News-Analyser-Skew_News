@@ -1,5 +1,6 @@
 import { cn } from "@/lib/utils";
 import { BiasMeter } from "@/components/ui/bias-meter";
+import Link from "next/link";
 
 function ClockIcon() {
   return (
@@ -59,12 +60,16 @@ function InfoIcon() {
 
 interface ArticleCardProps {
   title: string;
-  excerpt: string;
+  excerpt?: string;
   category: string;
   country: string;
   imageUrl?: string;
-  timeAgo: string;
-  readTime: string;
+  imageAlt?: string;
+  timeAgo?: string;
+  readTime?: string;
+  sourceCount?: number;
+  href?: string;
+  variant?: "horizontal" | "grid";
   bias: { left: number; center: number; right: number };
   className?: string;
 }
@@ -75,11 +80,100 @@ export function ArticleCard({
   category,
   country,
   imageUrl,
+  imageAlt = "",
   timeAgo,
   readTime,
+  sourceCount,
+  href,
+  variant = "horizontal",
   bias,
   className,
 }: ArticleCardProps) {
+  if (variant === "grid") {
+    return (
+      <article
+        className={cn(
+          "flex h-full min-w-0 flex-col overflow-hidden rounded-md border border-black/20 bg-bg-primary shadow-sm",
+          className,
+        )}
+      >
+        <div className="relative aspect-[16/9] w-full overflow-hidden bg-bg-secondary">
+          {imageUrl ? (
+            href ? (
+              <Link
+                href={href}
+                aria-label={`Read ${title}`}
+                className="block h-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent"
+              >
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={imageUrl}
+                  alt={imageAlt}
+                  className="h-full w-full object-cover transition-transform duration-300 hover:scale-[1.015]"
+                />
+              </Link>
+            ) : (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={imageUrl}
+                alt={imageAlt}
+                className="h-full w-full object-cover transition-transform duration-300 hover:scale-[1.015]"
+              />
+            )
+          ) : (
+            <div
+              className="h-full w-full bg-[linear-gradient(135deg,#d8d8d4,#efefeb)]"
+              role="img"
+              aria-label={imageAlt || "Article image unavailable"}
+            />
+          )}
+          <span className="absolute right-3 top-3 rounded-full bg-black/60 p-0.5 text-white ring-1 ring-white/80">
+            <InfoIcon />
+            <span className="sr-only">About this article</span>
+          </span>
+        </div>
+
+        <div className="flex min-h-0 flex-1 flex-col px-3.5 pb-3.5 pt-3">
+          <p className="text-[11px] leading-4 text-text-primary">
+            <span className="font-medium">{category}</span>
+            <span className="mx-1">·</span>
+            {country}
+          </p>
+          <h3 className="mt-1 text-[17px] font-semibold leading-[1.28] tracking-[-0.015em] text-text-primary">
+            {href ? (
+              <Link
+                href={href}
+                className="rounded-sm transition-colors hover:text-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/40"
+              >
+                {title}
+              </Link>
+            ) : (
+              title
+            )}
+          </h3>
+
+          <div
+            className="mt-4"
+            aria-label={`AI-estimated political framing: ${bias.left}% left, ${bias.center}% center, ${bias.right}% right`}
+          >
+            <BiasMeter
+              left={bias.left}
+              center={bias.center}
+              right={bias.right}
+              compact
+            />
+          </div>
+
+          {typeof sourceCount === "number" ? (
+            <p className="mt-4 text-[11px] leading-none text-text-primary">
+              {sourceCount} {sourceCount === 1 ? "source" : "sources"}
+            </p>
+          ) : null}
+        </div>
+      </article>
+    );
+  }
+
   return (
     <article
       className={cn(
@@ -90,7 +184,11 @@ export function ArticleCard({
       <div className="relative aspect-video w-full shrink-0 overflow-hidden rounded-md bg-surface sm:aspect-square sm:w-40">
         {imageUrl ? (
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={imageUrl} alt="" className="h-full w-full object-cover" />
+          <img
+            src={imageUrl}
+            alt={imageAlt}
+            className="h-full w-full object-cover"
+          />
         ) : null}
         <span className="absolute right-2 top-2 rounded-full bg-bg-primary/90 p-1 text-text-secondary shadow-sm">
           <InfoIcon />
@@ -102,7 +200,9 @@ export function ArticleCard({
           {category} <span className="mx-1">·</span> {country}
         </p>
         <h3 className="text-h3 text-text-primary">{title}</h3>
-        <p className="text-body-md text-text-secondary">{excerpt}</p>
+        {excerpt ? (
+          <p className="text-body-md text-text-secondary">{excerpt}</p>
+        ) : null}
 
         <BiasMeter
           left={bias.left}
@@ -111,16 +211,22 @@ export function ArticleCard({
           className="mt-1"
         />
 
-        <div className="mt-1 flex items-center gap-4 text-caption text-text-secondary">
-          <span className="inline-flex items-center gap-1.5">
-            <ClockIcon />
-            {timeAgo}
-          </span>
-          <span className="inline-flex items-center gap-1.5">
-            <BookmarkIcon />
-            {readTime}
-          </span>
-        </div>
+        {timeAgo || readTime ? (
+          <div className="mt-1 flex items-center gap-4 text-caption text-text-secondary">
+            {timeAgo ? (
+              <span className="inline-flex items-center gap-1.5">
+                <ClockIcon />
+                {timeAgo}
+              </span>
+            ) : null}
+            {readTime ? (
+              <span className="inline-flex items-center gap-1.5">
+                <BookmarkIcon />
+                {readTime}
+              </span>
+            ) : null}
+          </div>
+        ) : null}
       </div>
     </article>
   );

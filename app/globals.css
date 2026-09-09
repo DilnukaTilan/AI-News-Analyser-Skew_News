@@ -40,6 +40,23 @@ body {
   font-family: var(--font-sans);
 }
 
+html {
+  scroll-behavior: smooth;
+}
+
+button,
+a {
+  -webkit-tap-highlight-color: transparent;
+}
+
+.topic-scroll {
+  scrollbar-width: none;
+}
+
+.topic-scroll::-webkit-scrollbar {
+  display: none;
+}
+
 /* Typography scale (Poppins) */
 .text-h1 {
   font-size: 32px;

@@ -50,7 +50,12 @@ export function BiasMeter({
 
   return (
     <div className={cn("w-full", className)}>
-      <div className="flex w-full items-stretch gap-1 overflow-hidden rounded-sm">
+      <div
+        className={cn(
+          "flex w-full items-stretch overflow-hidden rounded-sm",
+          compact ? "gap-px" : "gap-1",
+        )}
+      >
         {segments.map((s) => {
           // In compact mode, drop the word on tight segments and show just the percentage.
           const label = compact && s.value < 14 ? `${s.value}%` : s.label;
@@ -59,7 +64,8 @@ export function BiasMeter({
               key={s.key}
               style={{ width: `${s.value}%` }}
               className={cn(
-                "flex items-center justify-center px-2 py-1.5 text-caption font-medium whitespace-nowrap",
+                "flex min-w-0 items-center justify-center overflow-hidden whitespace-nowrap font-medium",
+                compact ? "px-1 py-0.5 text-[10px] leading-3" : "px-2 py-1.5 text-caption",
                 s.bg,
                 s.text,
               )}
