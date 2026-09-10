@@ -1,52 +1,52 @@
 import { AnalysisPanel } from "@/components/news/analysis-panel";
-import type { FeaturedArticle } from "@/lib/demo-news";
 
 interface AiSummaryProps {
-  article: Pick<
-    FeaturedArticle,
-    | "summaryBullets"
-    | "summaryGeneratedLabel"
-    | "summaryGeneratedDate"
-    | "summaryReadTime"
-    | "sentimentLabel"
-    | "loadedTerms"
-    | "disclaimer"
-  >;
+  article: {
+    analyzedAt: string;
+    disclaimer: string;
+    loadedTerms: string[];
+    model: string;
+    sentimentLabel: "positive" | "neutral" | "negative";
+    sentimentScore: number;
+    summary: string;
+  };
 }
 
 export function AiSummary({ article }: AiSummaryProps) {
   return (
     <AnalysisPanel title="AI Summary">
       <p className="mt-4 text-[10px] text-text-secondary">
-        <time dateTime={article.summaryGeneratedDate}>
-          {article.summaryGeneratedLabel}
+        <time dateTime={article.analyzedAt}>
+          Generated {new Intl.DateTimeFormat("en-US", { dateStyle: "medium" }).format(new Date(article.analyzedAt))}
         </time>
         <span className="mx-2">·</span>
-        {article.summaryReadTime}
+        {article.model}
       </p>
-      <ul className="mt-5 space-y-5 pl-4 text-[11px] leading-[1.55] marker:text-text-primary">
-        {article.summaryBullets.map((point) => (
-          <li key={point}>{point}</li>
-        ))}
-      </ul>
+      <p className="mt-5 text-[11px] leading-[1.65] text-text-primary">
+        {article.summary}
+      </p>
 
       <div className="mt-6 border-t border-divider pt-4">
         <div className="flex flex-wrap items-center gap-2 text-[10px]">
           <span className="font-semibold">Sentiment</span>
           <span className="rounded-full bg-bg-secondary px-2.5 py-1 capitalize text-text-secondary">
-            {article.sentimentLabel}
+            {article.sentimentLabel} ({article.sentimentScore.toFixed(2)})
           </span>
         </div>
         <p className="mt-3 text-[10px] font-semibold">Loaded terms</p>
         <div className="mt-2 flex flex-wrap gap-1.5">
-          {article.loadedTerms.map((term) => (
-            <span
-              key={term}
-              className="rounded-full border border-border bg-surface px-2 py-1 text-[9px] text-text-secondary"
-            >
-              {term}
-            </span>
-          ))}
+          {article.loadedTerms.length > 0 ? (
+            article.loadedTerms.map((term) => (
+              <span
+                key={term}
+                className="rounded-full border border-border bg-surface px-2 py-1 text-[9px] text-text-secondary"
+              >
+                {term}
+              </span>
+            ))
+          ) : (
+            <span className="text-[9px] text-text-secondary">None identified</span>
+          )}
         </div>
       </div>
 

@@ -12,6 +12,10 @@ import type {
 const URL_FILTER_CHUNK_SIZE = 15;
 const DEFAULT_ARTICLE_LIMIT = 30;
 const MAX_ARTICLE_LIMIT = 100;
+const ANALYSIS_QUERY_PAGE_SIZE = 200;
+const ARTICLE_ID_FILTER_CHUNK_SIZE = 100;
+const UUID_PATTERN =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 const ARTICLE_PROJECTION = `
   id,
@@ -56,14 +60,23 @@ const ARTICLE_PROJECTION = `
   )
 `;
 
+type PublicArticleAnalysis = Omit<ArticleAnalysis, "embedding">;
+
 type ArticleProjection = Article & {
-  article_analyses: ArticleAnalysis | ArticleAnalysis[] | null;
+  article_analyses: PublicArticleAnalysis | PublicArticleAnalysis[] | null;
   sources: Source | Source[] | null;
 };
 
-export type ArticleWithAnalysis = Article & {
-  analysis: ArticleAnalysis;
+export type ArticleWithAnalysis = Omit<Article, "analyzed_at"> & {
+  analyzed_at: string;
+  analysis: PublicArticleAnalysis;
   source: Source;
+};
+
+export type AnalysisWorkItem = {
+  analysis: ArticleAnalysis | null;
+  article: Article;
+  kind: "analysis" | "embedding" | "completion";
 };
 
 export type NewArticle = Omit<
@@ -91,7 +104,7 @@ function normalizePublicArticle(row: ArticleProjection): ArticleWithAnalysis | n
   const source = firstOrNull(row.sources);
   if (!analysis || !source || !row.analyzed_at) return null;
 
-  const article: Article = {
+  const article: Omit<Article, "analyzed_at"> & { analyzed_at: string } = {
     analyzed_at: row.analyzed_at,
     canonical_url: row.canonical_url,
     created_at: row.created_at,
@@ -121,6 +134,22 @@ function normalizeUrls(urls: readonly string[]): string[] {
   return [...new Set(urls.map((url) => url.trim()).filter(Boolean))];
 }
 
+function normalizeAnalysis(
+  value: ArticleAnalysis | ArticleAnalysis[] | null,
+): ArticleAnalysis | null {
+  return firstOrNull(value);
+}
+
+function classifyAnalysisWork(
+  article: Article,
+  analysis: ArticleAnalysis | null,
+): AnalysisWorkItem | null {
+  if (!analysis) return { analysis: null, article, kind: "analysis" };
+  if (!analysis.embedding) return { analysis, article, kind: "embedding" };
+  if (!article.analyzed_at) return { analysis, article, kind: "completion" };
+  return null;
+}
+
 export async function listPublishedArticles(
   limit?: number,
 ): Promise<ArticleWithAnalysis[]> {
@@ -145,7 +174,7 @@ export async function getPublishedArticleById(
   articleId: string,
 ): Promise<ArticleWithAnalysis | null> {
   const id = articleId.trim();
-  if (!id) return null;
+  if (!UUID_PATTERN.test(id)) return null;
 
   const { data, error } = await getSupabaseClient()
     .from("articles")
@@ -213,19 +242,142 @@ export async function insertArticle(input: NewArticle): Promise<Article> {
 
 export async function saveArticleAnalysis(
   input: SavedAnalysis,
-): Promise<ArticleAnalysis> {
+): Promise<void> {
   const now = new Date().toISOString();
-  const { data, error } = await getSupabaseAdmin()
+  const { error } = await getSupabaseAdmin()
     .from("article_analyses")
-    .upsert({ ...input, updated_at: now }, { onConflict: "article_id" })
-    .select("article_id,summary,sentiment_score,sentiment_label,bias_score,bias_label,left_percentage,center_percentage,right_percentage,confidence,framing_notes,loaded_terms,disclaimer,model,created_at,updated_at")
-    .single();
+    .upsert({ ...input, updated_at: now }, { onConflict: "article_id" });
 
   if (error) {
     throw new Error(`Unable to save article analysis: ${error.message}`);
   }
+}
 
-  return data;
+export async function saveArticleEmbedding(
+  articleId: string,
+  embedding: number[],
+): Promise<void> {
+  const now = new Date().toISOString();
+  const { data, error } = await getSupabaseAdmin()
+    .from("article_analyses")
+    .update({ embedding, updated_at: now })
+    .eq("article_id", articleId)
+    .select("article_id")
+    .maybeSingle();
+
+  if (error) {
+    throw new Error(`Unable to save article embedding: ${error.message}`);
+  }
+  if (!data) {
+    throw new Error("Unable to save article embedding: analysis row not found");
+  }
+}
+
+const ANALYSIS_WORK_PROJECTION = `
+  id,
+  source_id,
+  original_url,
+  canonical_url,
+  title,
+  image_url,
+  published_at,
+  raw_text,
+  scraped_at,
+  analyzed_at,
+  created_at,
+  updated_at,
+  article_analyses!article_analyses_article_id_fkey (
+    article_id,
+    summary,
+    sentiment_score,
+    sentiment_label,
+    bias_score,
+    bias_label,
+    left_percentage,
+    center_percentage,
+    right_percentage,
+    confidence,
+    framing_notes,
+    loaded_terms,
+    disclaimer,
+    model,
+    embedding,
+    created_at,
+    updated_at
+  )
+`;
+
+type AnalysisCandidateProjection = Article & {
+  article_analyses: ArticleAnalysis | ArticleAnalysis[] | null;
+};
+
+function normalizeAnalysisWorkRows(
+  rows: AnalysisCandidateProjection[],
+): AnalysisWorkItem[] {
+  return rows
+    .map((row) => {
+      const analysis = normalizeAnalysis(row.article_analyses);
+      const article: Article = {
+        analyzed_at: row.analyzed_at,
+        canonical_url: row.canonical_url,
+        created_at: row.created_at,
+        id: row.id,
+        image_url: row.image_url,
+        original_url: row.original_url,
+        published_at: row.published_at,
+        raw_text: row.raw_text,
+        scraped_at: row.scraped_at,
+        source_id: row.source_id,
+        title: row.title,
+        updated_at: row.updated_at,
+      };
+      return classifyAnalysisWork(article, analysis);
+    })
+    .filter((item): item is AnalysisWorkItem => item !== null);
+}
+
+export async function listAnalysisWork(
+  articleIds?: readonly string[],
+): Promise<AnalysisWorkItem[]> {
+  const admin = getSupabaseAdmin();
+  const normalizedIds = articleIds
+    ? [...new Set(articleIds.map((id) => id.trim()).filter(Boolean))]
+    : undefined;
+  const rows: AnalysisCandidateProjection[] = [];
+
+  if (normalizedIds) {
+    for (const idChunk of chunks(normalizedIds, ARTICLE_ID_FILTER_CHUNK_SIZE)) {
+      const { data, error } = await admin
+        .from("articles")
+        .select(ANALYSIS_WORK_PROJECTION)
+        .in("id", idChunk)
+        .order("created_at", { ascending: true })
+        .order("id", { ascending: true });
+
+      if (error) {
+        throw new Error(`Unable to list selected analysis work: ${error.message}`);
+      }
+      rows.push(...(data as AnalysisCandidateProjection[]));
+    }
+  } else {
+    for (let from = 0; ; from += ANALYSIS_QUERY_PAGE_SIZE) {
+      const { data, error } = await admin
+        .from("articles")
+        .select(ANALYSIS_WORK_PROJECTION)
+        .order("created_at", { ascending: true })
+        .order("id", { ascending: true })
+        .range(from, from + ANALYSIS_QUERY_PAGE_SIZE - 1);
+
+      if (error) {
+        throw new Error(`Unable to list analysis work: ${error.message}`);
+      }
+
+      rows.push(...(data as AnalysisCandidateProjection[]));
+      if (data.length < ANALYSIS_QUERY_PAGE_SIZE) break;
+    }
+  }
+
+  return normalizeAnalysisWorkRows(rows);
 }
 
 export async function markArticleAnalysisComplete(

@@ -124,3 +124,32 @@ from public.articles
 where analyzed_at is not null
 order by published_at desc, id desc
 limit 10;
+
+-- These vector checks must each return the expected positive result.
+select exists (
+  select 1
+  from pg_catalog.pg_extension
+  where extname = 'vector'
+) as vector_extension_enabled;
+
+select
+  data_type,
+  udt_schema,
+  udt_name
+from information_schema.columns
+where table_schema = 'public'
+  and table_name = 'article_analyses'
+  and column_name = 'embedding';
+
+select indexname, indexdef
+from pg_catalog.pg_indexes
+where schemaname = 'public'
+  and tablename = 'article_analyses'
+  and indexname = 'article_analyses_embedding_ivfflat_idx';
+
+select
+  article_id,
+  extensions.vector_dims(embedding) as embedding_dimensions
+from public.article_analyses
+where embedding is not null
+limit 10;

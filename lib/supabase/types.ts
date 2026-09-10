@@ -18,6 +18,7 @@ export type Database = {
           confidence: number;
           created_at: string;
           disclaimer: string;
+          embedding: number[] | null;
           framing_notes: string;
           left_percentage: number;
           loaded_terms: string[];
@@ -36,6 +37,7 @@ export type Database = {
           confidence: number;
           created_at?: string;
           disclaimer: string;
+          embedding?: number[] | null;
           framing_notes: string;
           left_percentage: number;
           loaded_terms?: string[];
@@ -54,6 +56,7 @@ export type Database = {
           confidence?: number;
           created_at?: string;
           disclaimer?: string;
+          embedding?: number[] | null;
           framing_notes?: string;
           left_percentage?: number;
           loaded_terms?: string[];

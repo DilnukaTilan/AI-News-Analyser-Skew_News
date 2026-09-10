@@ -1,6 +1,7 @@
--- Skew News initial Supabase schema.
+-- Skew News Supabase schema.
 -- Apply once to a new Supabase project from Dashboard -> SQL Editor.
--- Vector similarity support is intentionally added in a later phase.
+
+create extension if not exists vector with schema extensions;
 
 create table public.sources (
   id uuid primary key default gen_random_uuid(),
@@ -63,6 +64,7 @@ create table public.article_analyses (
     constraint article_analyses_disclaimer_not_blank check (length(btrim(disclaimer)) > 0),
   model text not null
     constraint article_analyses_model_not_blank check (length(btrim(model)) > 0),
+  embedding extensions.vector(1536),
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
   constraint article_analyses_percentages_total
@@ -132,6 +134,11 @@ create index articles_pending_analysis_idx
   on public.articles (created_at, id) where analyzed_at is null;
 create index articles_source_published_idx
   on public.articles (source_id, published_at desc, id desc);
+create index article_analyses_embedding_ivfflat_idx
+  on public.article_analyses
+  using ivfflat (embedding extensions.vector_cosine_ops)
+  with (lists = 100)
+  where embedding is not null;
 create index logs_created_idx on public.logs (created_at desc, id desc);
 create index logs_event_created_idx on public.logs (event, created_at desc);
 create index oxylabs_schedules_status_idx on public.oxylabs_schedules (status, updated_at desc);

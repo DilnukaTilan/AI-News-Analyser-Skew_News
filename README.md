@@ -22,18 +22,21 @@ Alternatively, copy `.env.example` to `.env.local` and populate the Clerk publis
 
 The database schema is not applied automatically. Create a Supabase project, then:
 
-1. Open **Dashboard -> SQL Editor** and run `supabase/schema.sql` once.
-2. Run `supabase/verify.sql` and confirm all six application tables have RLS enabled,
+1. Enable the **Vector** extension in the Supabase Dashboard.
+2. Open **Dashboard -> SQL Editor** and run `supabase/schema.sql` once for a new
+   database. For a database that already has the initial schema, run
+   `supabase/analysis-vector.sql` instead.
+3. Run `supabase/verify.sql` and confirm all six application tables have RLS enabled,
    the three public read policies exist, and client roles have no operational-table
-   access.
-3. Copy `.env.example` to `.env.local` if needed and set:
+   access. Also confirm the vector extension, embedding column, and IVFFlat index checks
+   return results.
+4. Copy `.env.example` to `.env.local` if needed and set:
    `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, and
    `SUPABASE_SERVICE_ROLE_KEY`.
 
 Only the first two variables are public. The service-role key bypasses RLS and must
-remain server-only. The checked-in initial migration mirrors `supabase/schema.sql`
-for future environment setup. This initial schema intentionally excludes pgvector
-and article embeddings; those are added with the related-articles phase.
+remain server-only. The checked-in initial migration captures the original schema;
+`supabase/analysis-vector.sql` upgrades existing databases with article embeddings.
 
 Start the development server:
 
@@ -82,6 +85,43 @@ curl.exe -X POST "http://localhost:3000/api/scrape" `
 
 Watch the `npm run dev` terminal for progress and the final summary. Scraping is
 append-only; valid new articles are stored with `analyzed_at` left null.
+
+## AI article analysis
+
+Set `OPENAI_API_KEY` and `BIASLY_ADMIN_SECRET` in `.env.local`. The optional
+`ANALYSIS_BATCH_SIZE` controls the number of work items per batch and defaults to 5.
+Apply `supabase/analysis-vector.sql` before running analysis against a database created
+from the original schema.
+
+Process all pending analysis and embedding work:
+
+```powershell
+curl.exe -X POST "http://localhost:3000/api/analyze" `
+  -H "Content-Type: application/json" `
+  -H "x-biasly-admin-secret: $env:BIASLY_ADMIN_SECRET" `
+  -d "{}"
+```
+
+Limit a run to one pending article:
+
+```powershell
+curl.exe -X POST "http://localhost:3000/api/analyze" `
+  -H "Content-Type: application/json" `
+  -H "x-biasly-admin-secret: $env:BIASLY_ADMIN_SECRET" `
+  -d '{"limit":1}'
+```
+
+Process selected pending article IDs:
+
+```powershell
+curl.exe -X POST "http://localhost:3000/api/analyze" `
+  -H "Content-Type: application/json" `
+  -H "x-biasly-admin-secret: $env:BIASLY_ADMIN_SECRET" `
+  -d '{"articleIds":["ARTICLE_UUID"]}'
+```
+
+Watch the `npm run dev` terminal for per-batch progress and the final summary. A full
+analysis is not rerun for rows that only need an embedding backfill.
 
 ## Checks
 

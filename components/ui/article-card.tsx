@@ -68,6 +68,10 @@ interface ArticleCardProps {
   timeAgo?: string;
   readTime?: string;
   sourceCount?: number;
+  publishedAt?: string;
+  sentimentLabel?: "positive" | "neutral" | "negative";
+  framingLabel?: "left" | "center" | "right" | "mixed" | "unclear";
+  confidence?: number;
   href?: string;
   variant?: "horizontal" | "grid";
   bias: { left: number; center: number; right: number };
@@ -84,6 +88,10 @@ export function ArticleCard({
   timeAgo,
   readTime,
   sourceCount,
+  publishedAt,
+  sentimentLabel,
+  framingLabel,
+  confidence,
   href,
   variant = "horizontal",
   bias,
@@ -137,7 +145,7 @@ export function ArticleCard({
           <p className="text-[11px] leading-4 text-text-primary">
             <span className="font-medium">{category}</span>
             <span className="mx-1">·</span>
-            {country}
+            {publishedAt ? <time dateTime={publishedAt}>{country}</time> : country}
           </p>
           <h3 className="mt-1 text-[17px] font-semibold leading-[1.28] tracking-[-0.015em] text-text-primary">
             {href ? (
@@ -151,6 +159,26 @@ export function ArticleCard({
               title
             )}
           </h3>
+
+          {sentimentLabel || framingLabel || typeof confidence === "number" ? (
+            <div className="mt-3 flex flex-wrap gap-1.5 text-[9px] text-text-secondary">
+              {sentimentLabel ? (
+                <span className="rounded-full bg-bg-secondary px-2 py-1 capitalize">
+                  Sentiment: {sentimentLabel}
+                </span>
+              ) : null}
+              {framingLabel ? (
+                <span className="rounded-full bg-bg-secondary px-2 py-1 capitalize">
+                  AI-estimated framing: {framingLabel}
+                </span>
+              ) : null}
+              {typeof confidence === "number" ? (
+                <span className="rounded-full bg-bg-secondary px-2 py-1">
+                  Confidence: {Math.round(confidence * 100)}%
+                </span>
+              ) : null}
+            </div>
+          ) : null}
 
           <div
             className="mt-4"

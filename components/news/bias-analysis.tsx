@@ -1,5 +1,12 @@
 import { AnalysisPanel } from "@/components/news/analysis-panel";
-import type { FeaturedArticle, FramingDistribution } from "@/lib/demo-news";
+
+type FramingLabel = "left" | "center" | "right" | "mixed" | "unclear";
+
+interface FramingDistribution {
+  left: number;
+  center: number;
+  right: number;
+}
 
 interface FramingRowProps {
   label: "Left" | "Center" | "Right";
@@ -31,28 +38,32 @@ export function FramingRow({ label, value, count }: FramingRowProps) {
 }
 
 interface BiasAnalysisProps {
-  article: Pick<
-    FeaturedArticle,
-    "bias" | "sourceCount" | "confidence" | "framingNotes"
-  >;
+  article: {
+    bias: FramingDistribution;
+    confidence: number;
+    framingLabel: FramingLabel;
+    framingNotes: string;
+    sourceName: string;
+  };
 }
 
 export function BiasAnalysis({ article }: BiasAnalysisProps) {
-  const strongest = (Object.entries(article.bias) as Array<
-    [keyof FramingDistribution, number]
-  >).reduce((current, candidate) =>
-    candidate[1] > current[1] ? candidate : current,
-  );
-  const label = `${strongest[0][0].toUpperCase()}${strongest[0].slice(1)}`;
+  const label = `${article.framingLabel[0].toUpperCase()}${article.framingLabel.slice(1)}`;
+  const labelColor =
+    article.framingLabel === "left"
+      ? "text-bias-left"
+      : article.framingLabel === "right"
+        ? "text-bias-right"
+        : "text-text-primary";
 
   return (
     <AnalysisPanel title="Bias Analysis">
-      <p className="mt-6 text-[11px] font-medium">Overall Bias</p>
-      <p className="mt-1 text-[24px] font-semibold leading-none text-bias-right">
-        {label} {strongest[1]}%
+      <p className="mt-6 text-[11px] font-medium">AI-estimated political framing</p>
+      <p className={`mt-1 text-[24px] font-semibold leading-none ${labelColor}`}>
+        {label}
       </p>
-      <p className="mt-2 text-[10px] text-bias-right">
-        Based on {article.sourceCount} balanced sources
+      <p className="mt-2 text-[10px] text-text-secondary">
+        Analysis of the article from {article.sourceName}
       </p>
 
       <div
@@ -65,8 +76,8 @@ export function BiasAnalysis({ article }: BiasAnalysisProps) {
       </div>
 
       <p className="mt-5 text-[11px] leading-[1.55] text-text-primary">
-        This AI-estimated analysis considers language, emphasis, and framing across
-        the coverage. Sources are weighted by reliability and recency.
+        This AI-estimated analysis considers language, emphasis, and framing in the
+        stored article text.
       </p>
       <p className="mt-3 text-[10px] leading-relaxed text-text-secondary">
         Confidence: {Math.round(article.confidence * 100)}% · {article.framingNotes}
