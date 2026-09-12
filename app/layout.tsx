@@ -10,7 +10,7 @@ const poppins = Poppins({
 });
 
 export const metadata: Metadata = {
-  title: "SKEW — Balanced news coverage, powered by AI",
+  title: "SKEW | Balanced news coverage, powered by AI",
   description:
     "SKEW analyzes real news with AI to surface reader-friendly sentiment and framing insights.",
 };
