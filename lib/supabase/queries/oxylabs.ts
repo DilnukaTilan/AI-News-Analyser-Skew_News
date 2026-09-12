@@ -143,3 +143,38 @@ export async function listOxylabsScheduleRuns(
 
   return data;
 }
+
+export async function listAllOxylabsScheduleRuns(
+  limit?: number,
+): Promise<OxylabsScheduleRun[]> {
+  const { data, error } = await getSupabaseAdmin()
+    .from("oxylabs_schedule_runs")
+    .select(RUN_COLUMNS)
+    .order("created_at", { ascending: false })
+    .order("id", { ascending: false })
+    .limit(clampRunLimit(limit));
+
+  if (error) {
+    throw new Error(`Unable to list all Oxylabs schedule runs: ${error.message}`);
+  }
+
+  return data;
+}
+
+export async function getOxylabsScheduleRunByJobId(
+  scheduleRecordId: string,
+  jobId: string,
+): Promise<OxylabsScheduleRun | null> {
+  const { data, error } = await getSupabaseAdmin()
+    .from("oxylabs_schedule_runs")
+    .select(RUN_COLUMNS)
+    .eq("schedule_record_id", scheduleRecordId)
+    .eq("job_id", jobId)
+    .maybeSingle();
+
+  if (error) {
+    throw new Error(`Unable to find Oxylabs schedule run: ${error.message}`);
+  }
+
+  return data;
+}

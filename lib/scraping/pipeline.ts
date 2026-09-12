@@ -12,6 +12,7 @@ import {
   type ScrapeRequest,
   type ScrapeResult,
   type ScrapeSummary,
+  type SourceStrategy,
 } from "@/lib/scraping/types";
 import {
   findExistingArticleUrls,
@@ -98,7 +99,7 @@ async function processSource(
     context: { sourceName: source.name },
   });
 
-  let strategy;
+  let strategy: SourceStrategy;
   try {
     strategy = parseSourceStrategy(source.parser_strategy);
   } catch (error) {
@@ -126,6 +127,39 @@ async function processSource(
       context: { reason: error instanceof Error ? error.message : "Homepage fetch failed" },
     });
     return true;
+  }
+
+  return processHomepageHtmlAndArticles(
+    source,
+    homepageHtml,
+    limitPerSource,
+    summary,
+    strategy,
+  );
+}
+
+export async function processHomepageHtmlAndArticles(
+  source: Source,
+  homepageHtml: string,
+  limitPerSource: number,
+  summary: ScrapeSummary,
+  existingStrategy?: SourceStrategy,
+): Promise<boolean> {
+  let strategy: SourceStrategy;
+  if (existingStrategy) {
+    strategy = existingStrategy;
+  } else {
+    try {
+      strategy = parseSourceStrategy(source.parser_strategy);
+    } catch (error) {
+      increment(summary.rejectionReasons, "invalid_source_strategy");
+      await writeLog("scrape_source_failed", `Source ${source.name} has an invalid parser strategy.`, {
+        level: "error",
+        sourceId: source.id,
+        context: { reason: error instanceof Error ? error.message : "Invalid strategy" },
+      });
+      return true;
+    }
   }
 
   let extraction;
