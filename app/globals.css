@@ -98,3 +98,160 @@ a {
   font-weight: 400;
   line-height: 1.4;
 }
+
+/* ==========================================================================
+   Adaptive Bias Meter (Character-Length Aware + Fluid Responsive Sizing)
+   ========================================================================== */
+
+.bias-meter-segment {
+  container-type: inline-size;
+  container-name: bias-segment;
+  padding-left: clamp(2px, 1.5cqi, 8px);
+  padding-right: clamp(2px, 1.5cqi, 8px);
+}
+
+/* By default, keep adaptive spans hidden until container query matches */
+.bias-meter-segment .bias-label-full,
+.bias-meter-segment .bias-label-letter,
+.bias-meter-segment .bias-label-number {
+  display: none;
+}
+
+/* --- Regular Bias Meter (data-compact="false") --- */
+
+/* Center segment (full word ~10 chars: "Center 45%") */
+@container bias-segment (min-width: 80px) {
+  .bias-meter-segment[data-segment="center"]:not([data-compact="true"]) .bias-label-full {
+    display: inline;
+  }
+}
+@container bias-segment (min-width: 42px) and (max-width: 79.9px) {
+  .bias-meter-segment[data-segment="center"]:not([data-compact="true"]) .bias-label-letter {
+    display: inline;
+  }
+}
+@container bias-segment (min-width: 24px) and (max-width: 41.9px) {
+  .bias-meter-segment[data-segment="center"]:not([data-compact="true"]) .bias-label-number {
+    display: inline;
+  }
+}
+
+/* Right segment (full word ~9 chars: "Right 45%") */
+@container bias-segment (min-width: 72px) {
+  .bias-meter-segment[data-segment="right"]:not([data-compact="true"]) .bias-label-full {
+    display: inline;
+  }
+}
+@container bias-segment (min-width: 42px) and (max-width: 71.9px) {
+  .bias-meter-segment[data-segment="right"]:not([data-compact="true"]) .bias-label-letter {
+    display: inline;
+  }
+}
+@container bias-segment (min-width: 24px) and (max-width: 41.9px) {
+  .bias-meter-segment[data-segment="right"]:not([data-compact="true"]) .bias-label-number {
+    display: inline;
+  }
+}
+
+/* Left segment (full word ~8 chars: "Left 45%") */
+@container bias-segment (min-width: 65px) {
+  .bias-meter-segment[data-segment="left"]:not([data-compact="true"]) .bias-label-full {
+    display: inline;
+  }
+}
+@container bias-segment (min-width: 42px) and (max-width: 64.9px) {
+  .bias-meter-segment[data-segment="left"]:not([data-compact="true"]) .bias-label-letter {
+    display: inline;
+  }
+}
+@container bias-segment (min-width: 24px) and (max-width: 41.9px) {
+  .bias-meter-segment[data-segment="left"]:not([data-compact="true"]) .bias-label-number {
+    display: inline;
+  }
+}
+
+/* --- Compact Bias Meter (data-compact="true", 10px text) --- */
+
+/* Center segment compact */
+@container bias-segment (min-width: 70px) {
+  .bias-meter-segment[data-segment="center"][data-compact="true"] .bias-label-full {
+    display: inline;
+  }
+}
+@container bias-segment (min-width: 36px) and (max-width: 69.9px) {
+  .bias-meter-segment[data-segment="center"][data-compact="true"] .bias-label-letter {
+    display: inline;
+  }
+}
+@container bias-segment (min-width: 20px) and (max-width: 35.9px) {
+  .bias-meter-segment[data-segment="center"][data-compact="true"] .bias-label-number {
+    display: inline;
+  }
+}
+
+/* Right segment compact */
+@container bias-segment (min-width: 64px) {
+  .bias-meter-segment[data-segment="right"][data-compact="true"] .bias-label-full {
+    display: inline;
+  }
+}
+@container bias-segment (min-width: 36px) and (max-width: 63.9px) {
+  .bias-meter-segment[data-segment="right"][data-compact="true"] .bias-label-letter {
+    display: inline;
+  }
+}
+@container bias-segment (min-width: 20px) and (max-width: 35.9px) {
+  .bias-meter-segment[data-segment="right"][data-compact="true"] .bias-label-number {
+    display: inline;
+  }
+}
+
+/* Left segment compact */
+@container bias-segment (min-width: 58px) {
+  .bias-meter-segment[data-segment="left"][data-compact="true"] .bias-label-full {
+    display: inline;
+  }
+}
+@container bias-segment (min-width: 36px) and (max-width: 57.9px) {
+  .bias-meter-segment[data-segment="left"][data-compact="true"] .bias-label-letter {
+    display: inline;
+  }
+}
+@container bias-segment (min-width: 20px) and (max-width: 35.9px) {
+  .bias-meter-segment[data-segment="left"][data-compact="true"] .bias-label-number {
+    display: inline;
+  }
+}
+
+/* --- Explicit Format Overrides (labelFormat prop) --- */
+.bias-meter-segment[data-format="full"] .bias-label-full {
+  display: inline !important;
+}
+.bias-meter-segment[data-format="full"] .bias-label-letter,
+.bias-meter-segment[data-format="full"] .bias-label-number {
+  display: none !important;
+}
+
+.bias-meter-segment[data-format="letter"] .bias-label-letter {
+  display: inline !important;
+}
+.bias-meter-segment[data-format="letter"] .bias-label-full,
+.bias-meter-segment[data-format="letter"] .bias-label-number {
+  display: none !important;
+}
+
+.bias-meter-segment[data-format="number"] .bias-label-number {
+  display: inline !important;
+}
+.bias-meter-segment[data-format="number"] .bias-label-full,
+.bias-meter-segment[data-format="number"] .bias-label-letter {
+  display: none !important;
+}
+
+/* Fallback for environments lacking CSS container query support */
+@supports not (container-type: inline-size) {
+  .bias-meter-segment .bias-label-letter {
+    display: inline;
+  }
+}
+

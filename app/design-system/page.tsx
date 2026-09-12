@@ -233,17 +233,91 @@ export default function DesignSystemPage() {
             </div>
 
             {/* Bias meter */}
-            <div>
-              <p className="text-caption mb-4 font-semibold uppercase text-text-secondary">
-                Bias Meter
-              </p>
-              <BiasMeter
-                left={25}
-                center={50}
-                right={25}
-                showScale
-                className="max-w-lg"
-              />
+            <div className="space-y-6">
+              <div>
+                <p className="text-caption mb-1 font-semibold uppercase text-text-secondary">
+                  Adaptive Bias Meter (Balanced: 25% / 50% / 25%)
+                </p>
+                <p className="text-[12px] text-text-secondary mb-3">
+                  Full words displayed when segments have sufficient width.
+                </p>
+                <BiasMeter
+                  left={25}
+                  center={50}
+                  right={25}
+                  showScale
+                  className="max-w-lg"
+                />
+              </div>
+
+              <div>
+                <p className="text-caption mb-1 font-semibold uppercase text-text-secondary">
+                  Character-Length Aware Mixed Tiers (Skewed: 10% / 75% / 15%)
+                </p>
+                <p className="text-[12px] text-text-secondary mb-3">
+                  Left shows number only (10%), Center shows full word (Center 75%), Right shows letter (R 15%).
+                </p>
+                <BiasMeter
+                  left={10}
+                  center={75}
+                  right={15}
+                  showScale
+                  className="max-w-lg"
+                />
+              </div>
+
+              <div>
+                <p className="text-caption mb-1 font-semibold uppercase text-text-secondary">
+                  Micro-segment Handling (5% / 90% / 5%)
+                </p>
+                <p className="text-[12px] text-text-secondary mb-3">
+                  Tight micro-segments under threshold cleanly hide text to avoid overflow while maintaining full tooltips.
+                </p>
+                <BiasMeter
+                  left={5}
+                  center={90}
+                  right={5}
+                  showScale
+                  className="max-w-lg"
+                />
+              </div>
+
+              <div>
+                <p className="text-caption mb-1 font-semibold uppercase text-text-secondary">
+                  Compact Mode (Cards: 15% / 70% / 15%)
+                </p>
+                <p className="text-[12px] text-text-secondary mb-3">
+                  Height 18px, gap-px, 10px font, and fluid padding tailored for card feeds.
+                </p>
+                <div className="max-w-xs rounded-md border border-border p-3 bg-bg-primary">
+                  <BiasMeter
+                    left={15}
+                    center={70}
+                    right={15}
+                    compact
+                  />
+                </div>
+              </div>
+
+              <div>
+                <p className="text-caption mb-1 font-semibold uppercase text-text-secondary">
+                  Explicit Format Overrides (labelFormat prop)
+                </p>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 max-w-2xl">
+                  <div>
+                    <span className="text-[11px] text-text-secondary mb-1 block">labelFormat=&quot;number&quot;</span>
+                    <BiasMeter left={25} center={50} right={25} labelFormat="number" />
+                  </div>
+                  <div>
+                    <span className="text-[11px] text-text-secondary mb-1 block">labelFormat=&quot;letter&quot;</span>
+                    <BiasMeter left={25} center={50} right={25} labelFormat="letter" />
+                  </div>
+                  <div>
+                    <span className="text-[11px] text-text-secondary mb-1 block">labelFormat=&quot;full&quot;</span>
+                    <BiasMeter left={25} center={50} right={25} labelFormat="full" />
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </Section>

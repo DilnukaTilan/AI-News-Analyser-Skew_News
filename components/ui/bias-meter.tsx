@@ -7,10 +7,18 @@ interface BiasMeterProps {
   /** Render the 0% / 50% / 100% scale ticks below the bar. */
   showScale?: boolean;
   /**
-   * Compact card form: the left segment reads "L 20%" instead of "Left 20%", and any
-   * segment narrower than ~14% collapses to its percentage only so the word never clips.
+   * Compact card form: tighter padding, 10px text, 18px bar height, and tighter thresholds.
    */
   compact?: boolean;
+  /**
+   * Display mode for segment labels:
+   * - "auto" (default): dynamically adapts between full word, first letter, and just numbers
+   *   combining Character-Length Awareness and Fluid Responsive Padding & Sizing.
+   * - "full": always shows full word + percentage (e.g., "Left 20%")
+   * - "letter": always shows first letter + percentage (e.g., "L 20%")
+   * - "number": always shows percentage number only (e.g., "20%")
+   */
+  labelFormat?: "auto" | "full" | "letter" | "number";
   className?: string;
 }
 
@@ -21,28 +29,31 @@ export function BiasMeter({
   right,
   showScale = false,
   compact = false,
+  labelFormat = "auto",
   className,
 }: BiasMeterProps) {
-  const leftWord = compact ? "L" : "Left";
   const segments = [
     {
-      key: "left",
+      key: "left" as const,
+      name: "Left",
+      letter: "L",
       value: left,
-      label: `${leftWord} ${left}%`,
       bg: "bg-bias-left",
       text: "text-white",
     },
     {
-      key: "center",
+      key: "center" as const,
+      name: "Center",
+      letter: "C",
       value: center,
-      label: `Center ${center}%`,
       bg: "bg-bias-center",
       text: "text-text-primary",
     },
     {
-      key: "right",
+      key: "right" as const,
+      name: "Right",
+      letter: "R",
       value: right,
-      label: `Right ${right}%`,
       bg: "bg-bias-right",
       text: "text-white",
     },
@@ -52,31 +63,54 @@ export function BiasMeter({
     <div className={cn("w-full", className)}>
       <div
         className={cn(
-          "flex w-full items-stretch overflow-hidden rounded-sm",
-          compact ? "gap-px" : "gap-1",
+          "flex w-full items-stretch overflow-hidden rounded-sm select-none",
+          compact ? "h-[18px] gap-px" : "h-[22px] gap-1",
         )}
+        role="meter"
+        aria-label={`AI-estimated political framing: ${left}% Left, ${center}% Center, ${right}% Right`}
+        aria-valuenow={center}
+        aria-valuemin={0}
+        aria-valuemax={100}
       >
         {segments.map((s) => {
-          // In compact mode, drop the word on tight segments and show just the percentage.
-          const label = compact && s.value < 14 ? `${s.value}%` : s.label;
+          const fullLabel = `${s.name} ${s.value}%`;
+          const letterLabel = `${s.letter} ${s.value}%`;
+          const numberLabel = `${s.value}%`;
+
           return (
             <div
               key={s.key}
+              data-segment={s.key}
+              data-compact={compact ? "true" : "false"}
+              data-format={labelFormat}
               style={{ width: `${s.value}%` }}
+              title={s.value > 0 ? fullLabel : undefined}
               className={cn(
-                "flex min-w-0 items-center justify-center overflow-hidden whitespace-nowrap font-medium",
-                compact ? "px-1 py-0.5 text-[10px] leading-3" : "px-2 py-1.5 text-caption",
+                "bias-meter-segment relative flex h-full min-w-0 items-center justify-center overflow-hidden whitespace-nowrap font-medium leading-none tracking-tight",
+                compact ? "text-[10px]" : "text-caption",
                 s.bg,
                 s.text,
               )}
             >
-              {s.value > 0 && label}
+              {s.value > 0 && (
+                <>
+                  <span className="bias-label-full" aria-hidden="true">
+                    {fullLabel}
+                  </span>
+                  <span className="bias-label-letter" aria-hidden="true">
+                    {letterLabel}
+                  </span>
+                  <span className="bias-label-number" aria-hidden="true">
+                    {numberLabel}
+                  </span>
+                </>
+              )}
             </div>
           );
         })}
       </div>
       {showScale && (
-        <div className="mt-1 flex justify-between text-caption text-text-secondary">
+        <div className="mt-1 flex justify-between text-caption text-text-secondary select-none">
           <span>0%</span>
           <span>50%</span>
           <span>100%</span>
