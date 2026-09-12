@@ -14,6 +14,8 @@ const DEFAULT_ARTICLE_LIMIT = 30;
 const MAX_ARTICLE_LIMIT = 100;
 const ANALYSIS_QUERY_PAGE_SIZE = 200;
 const ARTICLE_ID_FILTER_CHUNK_SIZE = 100;
+const EMBEDDING_DIMENSIONS = 1_536;
+const RELATED_ARTICLE_LIMIT = 5;
 const UUID_PATTERN =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
@@ -79,6 +81,20 @@ export type AnalysisWorkItem = {
   kind: "analysis" | "embedding" | "completion";
 };
 
+export type RelatedArticle = {
+  biasLabel: "left" | "center" | "right" | "mixed" | "unclear";
+  centerPercentage: number;
+  confidence: number;
+  id: string;
+  imageUrl: string;
+  leftPercentage: number;
+  publishedAt: string;
+  rightPercentage: number;
+  sentimentLabel: "positive" | "neutral" | "negative";
+  sourceName: string;
+  title: string;
+};
+
 export type NewArticle = Omit<
   TablesInsert<"articles">,
   "analyzed_at" | "created_at" | "id" | "updated_at"
@@ -132,6 +148,23 @@ function chunks<T>(values: readonly T[], size: number): T[][] {
 
 function normalizeUrls(urls: readonly string[]): string[] {
   return [...new Set(urls.map((url) => url.trim()).filter(Boolean))];
+}
+
+function normalizeEmbedding(value: number[] | string): number[] | null {
+  if (Array.isArray(value)) return value;
+
+  try {
+    const parsed: unknown = JSON.parse(value);
+    if (
+      !Array.isArray(parsed) ||
+      !parsed.every((entry: unknown): entry is number => typeof entry === "number")
+    ) {
+      return null;
+    }
+    return parsed;
+  } catch {
+    return null;
+  }
 }
 
 function normalizeAnalysis(
@@ -188,6 +221,88 @@ export async function getPublishedArticleById(
   }
 
   return data ? normalizePublicArticle(data) : null;
+}
+
+export async function getPublishedArticleEmbedding(
+  articleId: string,
+): Promise<number[] | null> {
+  const id = articleId.trim();
+  if (!UUID_PATTERN.test(id)) return null;
+
+  const publishedResult = await getSupabaseClient()
+    .from("articles")
+    .select("id")
+    .eq("id", id)
+    .not("analyzed_at", "is", null)
+    .maybeSingle();
+
+  if (publishedResult.error) {
+    throw new Error(
+      `Unable to verify published article embedding access: ${publishedResult.error.message}`,
+    );
+  }
+  if (!publishedResult.data) return null;
+
+  const { data, error } = await getSupabaseAdmin()
+    .from("article_analyses")
+    .select("embedding")
+    .eq("article_id", id)
+    .maybeSingle();
+
+  if (error) {
+    throw new Error(`Unable to load published article embedding: ${error.message}`);
+  }
+
+  const storedEmbedding = data?.embedding ?? null;
+  if (!storedEmbedding) return null;
+  const embedding = normalizeEmbedding(storedEmbedding);
+  if (
+    !embedding ||
+    embedding.length !== EMBEDDING_DIMENSIONS ||
+    embedding.some((value) => !Number.isFinite(value))
+  ) {
+    throw new Error("Unable to load published article embedding: invalid vector shape");
+  }
+
+  return embedding;
+}
+
+export async function getRelatedArticles(
+  articleId: string,
+  embedding: number[],
+): Promise<RelatedArticle[]> {
+  const id = articleId.trim();
+  if (!UUID_PATTERN.test(id)) return [];
+  if (
+    embedding.length !== EMBEDDING_DIMENSIONS ||
+    embedding.some((value) => !Number.isFinite(value))
+  ) {
+    throw new Error("Unable to list related articles: invalid embedding");
+  }
+
+  const { data, error } = await getSupabaseAdmin().rpc("get_related_articles", {
+    p_article_id: id,
+    p_query_embedding: embedding,
+    p_match_count: RELATED_ARTICLE_LIMIT,
+  });
+
+  if (error) {
+    throw new Error(`Unable to list related articles: ${error.message}`);
+  }
+
+  return (data ?? []).slice(0, RELATED_ARTICLE_LIMIT).map((article) => ({
+    biasLabel: article.bias_label,
+    centerPercentage: article.center_percentage,
+    confidence: article.confidence,
+    id: article.id,
+    imageUrl: article.image_url,
+    leftPercentage: article.left_percentage,
+    publishedAt: article.published_at,
+    rightPercentage: article.right_percentage,
+    sentimentLabel: article.sentiment_label,
+    sourceName: article.source_name,
+    title: article.title,
+  }));
 }
 
 export async function findExistingArticleUrls(

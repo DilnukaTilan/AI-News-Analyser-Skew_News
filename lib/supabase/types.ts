@@ -6,6 +6,8 @@ export type Json =
   | { [key: string]: Json | undefined }
   | Json[];
 
+export type Vector = number[] | string;
+
 export type Database = {
   public: {
     Tables: {
@@ -18,7 +20,7 @@ export type Database = {
           confidence: number;
           created_at: string;
           disclaimer: string;
-          embedding: number[] | null;
+          embedding: Vector | null;
           framing_notes: string;
           left_percentage: number;
           loaded_terms: string[];
@@ -37,7 +39,7 @@ export type Database = {
           confidence: number;
           created_at?: string;
           disclaimer: string;
-          embedding?: number[] | null;
+          embedding?: Vector | null;
           framing_notes: string;
           left_percentage: number;
           loaded_terms?: string[];
@@ -56,7 +58,7 @@ export type Database = {
           confidence?: number;
           created_at?: string;
           disclaimer?: string;
-          embedding?: number[] | null;
+          embedding?: Vector | null;
           framing_notes?: string;
           left_percentage?: number;
           loaded_terms?: string[];
@@ -316,7 +318,29 @@ export type Database = {
       };
     };
     Views: Record<string, never>;
-    Functions: Record<string, never>;
+    Functions: {
+      get_related_articles: {
+        Args: {
+          p_article_id: string;
+          p_match_count?: number;
+          p_query_embedding: Vector;
+        };
+        Returns: {
+          bias_label: "left" | "center" | "right" | "mixed" | "unclear";
+          center_percentage: number;
+          confidence: number;
+          cosine_distance: number;
+          id: string;
+          image_url: string;
+          left_percentage: number;
+          published_at: string;
+          right_percentage: number;
+          sentiment_label: "positive" | "neutral" | "negative";
+          source_name: string;
+          title: string;
+        }[];
+      };
+    };
     Enums: Record<string, never>;
     CompositeTypes: Record<string, never>;
   };

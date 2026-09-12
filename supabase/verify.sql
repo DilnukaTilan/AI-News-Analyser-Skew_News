@@ -153,3 +153,46 @@ select
 from public.article_analyses
 where embedding is not null
 limit 10;
+
+select
+  p.proname as function_name,
+  not p.prosecdef as security_invoker,
+  p.provolatile = 's' as stable,
+  p.proconfig as function_settings,
+  pg_get_function_identity_arguments(p.oid) as identity_arguments
+from pg_catalog.pg_proc p
+join pg_catalog.pg_namespace n on n.oid = p.pronamespace
+where n.nspname = 'public'
+  and p.proname = 'get_related_articles';
+
+select
+  has_function_privilege(
+    'anon',
+    'public.get_related_articles(uuid,extensions.vector,integer)',
+    'EXECUTE'
+  ) as anon_can_execute,
+  has_function_privilege(
+    'authenticated',
+    'public.get_related_articles(uuid,extensions.vector,integer)',
+    'EXECUTE'
+  ) as authenticated_can_execute,
+  has_function_privilege(
+    'service_role',
+    'public.get_related_articles(uuid,extensions.vector,integer)',
+    'EXECUTE'
+  ) as service_role_can_execute;
+
+with current_article as (
+  select article_id, embedding
+  from public.article_analyses
+  where embedding is not null
+  order by article_id
+  limit 1
+)
+select related.*
+from current_article
+cross join lateral public.get_related_articles(
+  current_article.article_id,
+  current_article.embedding,
+  5
+) as related;

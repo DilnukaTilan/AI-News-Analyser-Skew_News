@@ -29,7 +29,9 @@ The database schema is not applied automatically. Create a Supabase project, the
 3. Run `supabase/verify.sql` and confirm all six application tables have RLS enabled,
    the three public read policies exist, and client roles have no operational-table
    access. Also confirm the vector extension, embedding column, and IVFFlat index checks
-   return results.
+   return results. The related-article function checks should show `security_invoker`
+   and `stable` as true, `anon_can_execute` and `authenticated_can_execute` as false,
+   and `service_role_can_execute` as true.
 4. Copy `.env.example` to `.env.local` if needed and set:
    `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, and
    `SUPABASE_SERVICE_ROLE_KEY`.
@@ -122,6 +124,14 @@ curl.exe -X POST "http://localhost:3000/api/analyze" `
 
 Watch the `npm run dev` terminal for per-batch progress and the final summary. A full
 analysis is not rerun for rows that only need an embedding backfill.
+
+## Related articles
+
+After the vector upgrade SQL is applied and embeddings have been generated, each news
+details page queries up to five other analyzed articles by cosine distance. Related
+results must have an embedding, belong to an active source, and never include the
+current article. The section stays hidden until the current article has an embedding or
+when no related matches exist.
 
 ## Checks
 

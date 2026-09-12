@@ -8,9 +8,14 @@ import { AiSummary } from "@/components/news/ai-summary";
 import { ArticleActions } from "@/components/news/article-actions";
 import { BiasAnalysis } from "@/components/news/bias-analysis";
 import { NewsletterSignup } from "@/components/news/newsletter-signup";
+import { RelatedArticles } from "@/components/news/related-stories";
 import { SourceBreakdown } from "@/components/news/source-breakdown";
 import { BiasMeter } from "@/components/ui/bias-meter";
-import { getPublishedArticleById } from "@/lib/supabase/queries/articles";
+import {
+  getPublishedArticleById,
+  getPublishedArticleEmbedding,
+  getRelatedArticles,
+} from "@/lib/supabase/queries/articles";
 
 export const dynamic = "force-dynamic";
 
@@ -73,6 +78,11 @@ export default async function NewsDetailsPage({ params }: NewsDetailsPageProps) 
   if (!article) {
     notFound();
   }
+
+  const embedding = await getPublishedArticleEmbedding(article.id);
+  const relatedArticles = embedding
+    ? await getRelatedArticles(article.id, embedding)
+    : [];
 
   const analysis = article.analysis;
   const bias = {
@@ -191,6 +201,7 @@ export default async function NewsDetailsPage({ params }: NewsDetailsPageProps) 
             </aside>
           </div>
 
+          <RelatedArticles articles={relatedArticles} />
           <NewsletterSignup />
         </div>
       </main>
