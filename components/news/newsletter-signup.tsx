@@ -59,7 +59,7 @@ export function NewsletterSignup() {
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="Enter your email address"
                 required
-                className="h-11 w-full min-w-0 flex-1 rounded-lg border border-border bg-bg-primary px-4 text-sm text-text-primary placeholder:text-text-secondary/70 shadow-xs transition-all focus:border-text-primary focus:outline-none focus:ring-2 focus:ring-accent/20"
+                className="h-11 w-full min-w-0 sm:flex-1 rounded-lg border border-border bg-bg-primary px-4 text-sm text-text-primary placeholder:text-text-secondary/70 shadow-xs transition-all focus:border-text-primary focus:outline-none focus:ring-2 focus:ring-accent/20"
               />
               <button
                 type="submit"
