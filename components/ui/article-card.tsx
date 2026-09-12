@@ -135,17 +135,17 @@ export function ArticleCard({
               aria-label={imageAlt || "Article image unavailable"}
             />
           )}
-          <span className="absolute right-3 top-3 rounded-full bg-black/60 p-0.5 text-white ring-1 ring-white/80">
-            <InfoIcon />
-            <span className="sr-only">About this article</span>
-          </span>
         </div>
 
         <div className="flex min-h-0 flex-1 flex-col px-3.5 pb-3.5 pt-3">
           <p className="text-[11px] leading-4 text-text-primary">
             <span className="font-medium">{category}</span>
             <span className="mx-1">·</span>
-            {publishedAt ? <time dateTime={publishedAt}>{country}</time> : country}
+            {publishedAt ? (
+              <time dateTime={publishedAt}>{country}</time>
+            ) : (
+              country
+            )}
           </p>
           <h3 className="mt-1 text-[17px] font-semibold leading-[1.28] tracking-[-0.015em] text-text-primary">
             {href ? (
