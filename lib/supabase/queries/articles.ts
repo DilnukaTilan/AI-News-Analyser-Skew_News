@@ -10,7 +10,6 @@ import type {
 } from "@/lib/supabase/types";
 
 const URL_FILTER_CHUNK_SIZE = 15;
-const DEFAULT_ARTICLE_LIMIT = 30;
 const MAX_ARTICLE_LIMIT = 100;
 const ANALYSIS_QUERY_PAGE_SIZE = 200;
 const ARTICLE_ID_FILTER_CHUNK_SIZE = 100;
@@ -105,11 +104,6 @@ export type SavedAnalysis = Omit<
   "created_at" | "updated_at"
 >;
 
-function clampLimit(limit: number | undefined): number {
-  if (!Number.isFinite(limit)) return DEFAULT_ARTICLE_LIMIT;
-  return Math.min(MAX_ARTICLE_LIMIT, Math.max(1, Math.trunc(limit ?? DEFAULT_ARTICLE_LIMIT)));
-}
-
 function firstOrNull<T>(value: T | T[] | null): T | null {
   if (Array.isArray(value)) return value[0] ?? null;
   return value;
@@ -183,24 +177,138 @@ function classifyAnalysisWork(
   return null;
 }
 
+export const DEFAULT_PAGE_SIZE = 15;
+
+export type ListPublishedArticlesOptions = {
+  page?: number;
+  pageSize?: number;
+};
+
+export type PaginatedPublishedArticles = {
+  articles: ArticleWithAnalysis[];
+  totalCount: number;
+  page: number;
+  pageSize: number;
+  totalPages: number;
+};
+
 export async function listPublishedArticles(
-  limit?: number,
-): Promise<ArticleWithAnalysis[]> {
-  const { data, error } = await getSupabaseClient()
+  optionsOrPage: number | ListPublishedArticlesOptions = {},
+  limitOption?: number,
+): Promise<PaginatedPublishedArticles> {
+  let requestedPage = 1;
+  let pageSize = DEFAULT_PAGE_SIZE;
+
+  if (typeof optionsOrPage === "number") {
+    if (typeof limitOption === "number") {
+      requestedPage = Math.max(1, Math.trunc(optionsOrPage));
+      pageSize = Math.min(MAX_ARTICLE_LIMIT, Math.max(1, Math.trunc(limitOption)));
+    } else {
+      pageSize = Math.min(MAX_ARTICLE_LIMIT, Math.max(1, Math.trunc(optionsOrPage)));
+    }
+  } else if (optionsOrPage && typeof optionsOrPage === "object") {
+    if (typeof optionsOrPage.page === "number" && Number.isFinite(optionsOrPage.page)) {
+      requestedPage = Math.max(1, Math.trunc(optionsOrPage.page));
+    }
+    if (typeof optionsOrPage.pageSize === "number" && Number.isFinite(optionsOrPage.pageSize)) {
+      pageSize = Math.min(
+        MAX_ARTICLE_LIMIT,
+        Math.max(1, Math.trunc(optionsOrPage.pageSize)),
+      );
+    }
+  }
+
+  const from = (requestedPage - 1) * pageSize;
+  const to = from + pageSize - 1;
+
+  const client = getSupabaseClient();
+  const { data, error, count } = await client
     .from("articles")
-    .select(ARTICLE_PROJECTION)
+    .select(ARTICLE_PROJECTION, { count: "exact" })
     .not("analyzed_at", "is", null)
     .order("published_at", { ascending: false })
     .order("id", { ascending: false })
-    .limit(clampLimit(limit));
+    .range(from, to);
 
   if (error) {
+    if (error.code === "PGRST103" || error.message.toLowerCase().includes("range")) {
+      const { count: exactCount } = await client
+        .from("articles")
+        .select("id", { count: "exact", head: true })
+        .not("analyzed_at", "is", null);
+
+      const totalCount = exactCount ?? 0;
+      const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
+      const clampedPage = totalPages;
+      const clampedFrom = (clampedPage - 1) * pageSize;
+      const clampedTo = clampedFrom + pageSize - 1;
+
+      const clampedResult = await client
+        .from("articles")
+        .select(ARTICLE_PROJECTION)
+        .not("analyzed_at", "is", null)
+        .order("published_at", { ascending: false })
+        .order("id", { ascending: false })
+        .range(clampedFrom, clampedTo);
+
+      const articles = (clampedResult.data ?? [])
+        .map(normalizePublicArticle)
+        .filter((article): article is ArticleWithAnalysis => article !== null);
+
+      return {
+        articles,
+        totalCount,
+        page: clampedPage,
+        pageSize,
+        totalPages,
+      };
+    }
+
     throw new Error(`Unable to list published articles: ${error.message}`);
   }
 
-  return data
+  const totalCount = count ?? 0;
+  const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
+
+  if (totalCount > 0 && from >= totalCount && requestedPage > totalPages) {
+    const clampedPage = totalPages;
+    const clampedFrom = (clampedPage - 1) * pageSize;
+    const clampedTo = clampedFrom + pageSize - 1;
+
+    const clampedResult = await client
+      .from("articles")
+      .select(ARTICLE_PROJECTION)
+      .not("analyzed_at", "is", null)
+      .order("published_at", { ascending: false })
+      .order("id", { ascending: false })
+      .range(clampedFrom, clampedTo);
+
+    if (!clampedResult.error && clampedResult.data) {
+      const articles = clampedResult.data
+        .map(normalizePublicArticle)
+        .filter((article): article is ArticleWithAnalysis => article !== null);
+
+      return {
+        articles,
+        totalCount,
+        page: clampedPage,
+        pageSize,
+        totalPages,
+      };
+    }
+  }
+
+  const articles = (data ?? [])
     .map(normalizePublicArticle)
     .filter((article): article is ArticleWithAnalysis => article !== null);
+
+  return {
+    articles,
+    totalCount,
+    page: requestedPage,
+    pageSize,
+    totalPages,
+  };
 }
 
 export async function getPublishedArticleById(
