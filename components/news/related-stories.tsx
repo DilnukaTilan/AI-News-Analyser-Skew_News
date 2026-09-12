@@ -1,7 +1,5 @@
 import Link from "next/link";
 
-import { BiasMeter } from "@/components/ui/bias-meter";
-
 interface RelatedArticleItem {
   biasLabel: "left" | "center" | "right" | "mixed" | "unclear";
   centerPercentage: number;
@@ -40,7 +38,7 @@ export function RelatedArticles({ articles }: RelatedArticlesProps) {
         {articles.map((article) => (
           <article
             key={article.id}
-            className="grid min-w-0 grid-cols-[112px_minmax(0,1fr)] gap-3 sm:grid-cols-[136px_minmax(0,1fr)]"
+            className="grid min-w-0 grid-cols-[112px_minmax(0,1fr)] items-center gap-3 sm:grid-cols-[136px_minmax(0,1fr)]"
           >
             <Link
               href={`/news/${article.id}`}
@@ -54,9 +52,11 @@ export function RelatedArticles({ articles }: RelatedArticlesProps) {
                 className="h-full w-full object-cover transition-transform duration-300 hover:scale-[1.015]"
               />
             </Link>
-            <div className="min-w-0 self-start">
+            <div className="min-w-0 self-center">
               <p className="text-[10px] leading-4 text-text-secondary">
-                <span className="font-medium text-text-primary">{article.sourceName}</span>
+                <span className="font-medium text-text-primary">
+                  {article.sourceName}
+                </span>
                 <span className="mx-1">·</span>
                 <time dateTime={article.publishedAt}>
                   {dateFormatter.format(new Date(article.publishedAt))}
@@ -80,17 +80,6 @@ export function RelatedArticles({ articles }: RelatedArticlesProps) {
                 <span className="rounded-full bg-bg-secondary px-2 py-1">
                   Confidence: {Math.round(article.confidence * 100)}%
                 </span>
-              </div>
-              <div
-                className="mt-3"
-                aria-label={`AI-estimated political framing: ${article.leftPercentage}% left, ${article.centerPercentage}% center, ${article.rightPercentage}% right`}
-              >
-                <BiasMeter
-                  left={article.leftPercentage}
-                  center={article.centerPercentage}
-                  right={article.rightPercentage}
-                  compact
-                />
               </div>
             </div>
           </article>
