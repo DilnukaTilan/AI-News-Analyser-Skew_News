@@ -74,10 +74,10 @@ export function RelatedArticles({ articles }: RelatedArticlesProps) {
                 <span className="rounded-full bg-bg-secondary px-2 py-1 capitalize">
                   Sentiment: {article.sentimentLabel}
                 </span>
-                <span className="rounded-full bg-bg-secondary px-2 py-1 capitalize">
+                <span className="hidden rounded-full bg-bg-secondary px-2 py-1 capitalize sm:inline-block">
                   AI-estimated framing: {article.biasLabel}
                 </span>
-                <span className="rounded-full bg-bg-secondary px-2 py-1">
+                <span className="hidden rounded-full bg-bg-secondary px-2 py-1 sm:inline-block">
                   Confidence: {Math.round(article.confidence * 100)}%
                 </span>
               </div>
